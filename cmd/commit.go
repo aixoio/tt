@@ -77,21 +77,18 @@ var commitCmd = &cobra.Command{
 		fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Committing with message: ") + styles.Highlight.Render("\""+message+"\""))
 
 		// Execute commit
-		fmt.Print(styles.Spinner.Render("⏳") + " " + styles.Info.Render("Creating commit... "))
+		fmt.Print(styles.Spinner.Render("⏳") + " " + styles.Info.Render("Creating commit...\n"))
 		gitCmd := exec.Command("git", "commit", "-m", message)
 		gitCmd.Stdout = os.Stdout
 		gitCmd.Stderr = os.Stderr
 
 		if err := gitCmd.Run(); err != nil {
 			fmt.Println(styles.ErrorIcon)
-			return fmt.Errorf("failed to commit: %w", err)
+			return err
 		}
-		fmt.Println(styles.SuccessIcon)
 
-		// Show success message with commit info
-		fmt.Println()
 		fmt.Println(styles.Card.Render(
-			styles.SuccessIcon + " " + styles.Success.Render("Commit successful!") + "\n" +
+			styles.Success.Render("Commit successful!") + "\n" +
 				styles.Neutral.Render("Message: ") + styles.Highlight.Render(message),
 		))
 
@@ -101,11 +98,9 @@ var commitCmd = &cobra.Command{
 			fmt.Println()
 			fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Pushing changes... "))
 			if err := pushChanges(); err != nil {
-				fmt.Println(styles.ErrorIcon)
-				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("Push failed, but commit was successful"))
+				fmt.Println(styles.Warning.Render("Push failed, but commit was successful"))
 				return fmt.Errorf("failed to push after commit: %w", err)
 			}
-			fmt.Println(styles.SuccessIcon)
 		}
 
 		return nil

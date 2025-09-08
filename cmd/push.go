@@ -65,6 +65,7 @@ func pushChanges() error {
 		fmt.Println(styles.InfoIcon + " " + styles.Info.Render("No upstream branch configured"))
 
 		err := runWithSpinner(styles.InfoIcon+" "+styles.Info.Render("Setting upstream to origin/HEAD"), func() error {
+			fmt.Println() // Ensure newline before git output
 			pushCmd := exec.Command("git", "push", "--set-upstream", "origin", "HEAD")
 			pushCmd.Stdout = os.Stdout
 			pushCmd.Stderr = os.Stderr
@@ -75,12 +76,11 @@ func pushChanges() error {
 			fmt.Println(styles.ErrorIcon)
 			return fmt.Errorf("failed to push and set upstream: %w", err)
 		}
-		fmt.Println(styles.SuccessIcon)
 
 		// Show success message
 		fmt.Println()
 		fmt.Println(styles.Card.Render(
-			styles.SuccessIcon + " " + styles.Success.Render("Push completed!") + "\n" +
+			styles.Success.Render("Push completed!") + "\n" +
 				styles.Neutral.Render("Status: ") + styles.Success.Render("Upstream set and changes pushed"),
 		))
 		return nil
@@ -88,6 +88,7 @@ func pushChanges() error {
 
 	// Upstream exists, just push
 	err := runWithSpinner(styles.InfoIcon+" "+styles.Info.Render("Pushing changes to remote..."), func() error {
+		fmt.Println() // Ensure newline before git output
 		pushCmd := exec.Command("git", "push")
 		pushCmd.Stdout = os.Stdout
 		pushCmd.Stderr = os.Stderr
@@ -98,12 +99,11 @@ func pushChanges() error {
 		fmt.Println(styles.ErrorIcon)
 		return fmt.Errorf("failed to push: %w", err)
 	}
-	fmt.Println(styles.SuccessIcon)
 
 	// Show success message
 	fmt.Println()
 	fmt.Println(styles.Card.Render(
-		styles.SuccessIcon + " " + styles.Success.Render("Push completed!") + "\n" +
+		styles.Success.Render("Push completed!") + "\n" +
 			styles.Neutral.Render("Status: ") + styles.Success.Render("Changes pushed to remote"),
 	))
 	return nil
