@@ -12,19 +12,19 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "tt",
 	Short: "A beautiful git helper tool",
-	Long: styles.Header.Render("✨ tt - Git Helper Tool") + `
+	Long: styles.Header.Render("tt - Git Helper Tool") + `
 
-` + styles.Info.Render(`A beautifully styled, 100% git compatible tool built
+A beautifully styled, 100% git compatible tool built
 to make git operations intuitive and enjoyable for developers.
 
 Features:
-• `) + styles.Highlight.Render(`Interactive prompts`) + styles.Info.Render(` for commit messages and branch names
-• `) + styles.Highlight.Render(`Smart defaults`) + styles.Info.Render(` for common git operations
-• `) + styles.Highlight.Render(`Beautiful styling`) + styles.Info.Render(` with clear visual feedback
-• `) + styles.Highlight.Render(`Auto-push`) + styles.Info.Render(` and upstream management
-• `) + styles.Highlight.Render(`Conflict-aware`) + styles.Info.Render(` merge operations
+• ` + styles.Highlight.Render(`Interactive prompts`) + ` for commit messages and branch names
+• ` + styles.Highlight.Render(`Smart defaults`) + ` for common git operations
+• ` + styles.Highlight.Render(`Beautiful styling`) + ` with clear visual feedback
+• ` + styles.Highlight.Render(`Auto-push`) + ` and upstream management
+• ` + styles.Highlight.Render(`Conflict-aware`) + ` merge operations
 
-Get started by running: `) + styles.InlineCode.Render(`tt init`),
+Get started by running: ` + styles.InlineCode.Render(`tt init`),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
