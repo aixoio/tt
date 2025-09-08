@@ -8,17 +8,21 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+
+	"github.com/aixoio/tt/styles"
 )
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:     "merge <source> [target]",
 	Aliases: []string{"m"},
-	Short:   "Merge branches with smart conflict handling",
-	Long: `Merge source branch into target branch with intelligent prompts.
-If branches not provided, will show interactive selection.`,
-	Args: cobra.MaximumNArgs(2),
+	Short:   "Merge branches with intelligent conflict handling",
+	Long:    styles.Info.Render("Merge source branch into target branch with intelligent prompts. If branches not provided, will show interactive selection."),
+	Args:    cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Show header
+		fmt.Println(styles.Header.Render("Git Merge"))
+		fmt.Println()
 		sourceBranch := ""
 		targetBranch := ""
 
@@ -51,46 +55,65 @@ If branches not provided, will show interactive selection.`,
 		}
 
 		// Confirm merge details
-		fmt.Printf("Merging '%s' into '%s'\n", sourceBranch, targetBranch)
+		fmt.Println(styles.Card.Render(
+			styles.InfoIcon + " " + styles.Info.Render("Merge Operation") + "\n" +
+				styles.Neutral.Render("Source: ") + styles.Branch.Render(sourceBranch) + "\n" +
+				styles.Neutral.Render("Target: ") + styles.Branch.Render(targetBranch),
+		))
 
 		// Check if we're already on the target branch
 		if currentBranch != targetBranch {
-			fmt.Printf("Switching to target branch '%s'...\n", targetBranch)
+			fmt.Print(styles.Spinner.Render("⏳") + " " + styles.Info.Render("Switching to target branch ") + styles.Branch.Render(targetBranch) + "... ")
 			if err := exec.Command("git", "checkout", targetBranch).Run(); err != nil {
+				fmt.Println(styles.ErrorIcon)
 				return fmt.Errorf("failed to switch to target branch: %w", err)
 			}
+			fmt.Println(styles.SuccessIcon)
 		}
 
 		// Perform the merge
-		fmt.Printf("Merging '%s' into '%s'...\n", sourceBranch, targetBranch)
+		fmt.Print(styles.Spinner.Render("⏳") + " " + styles.Info.Render("Merging ") + styles.Branch.Render(sourceBranch) + styles.Info.Render(" into ") + styles.Branch.Render(targetBranch) + "... ")
 		gitMergeCmd := exec.Command("git", "merge", sourceBranch)
 		gitMergeCmd.Stdout = os.Stdout
 		gitMergeCmd.Stderr = os.Stderr
 
 		if err := gitMergeCmd.Run(); err != nil {
+			fmt.Println(styles.ErrorIcon)
 			return fmt.Errorf("merge failed: %w", err)
 		}
+		fmt.Println(styles.SuccessIcon)
 
-		fmt.Printf("Successfully merged '%s' into '%s'.\n", sourceBranch, targetBranch)
+		// Show success message
+		fmt.Println()
+		fmt.Println(styles.Card.Render(
+			styles.SuccessIcon + " " + styles.Success.Render("Merge completed successfully!") + "\n" +
+				styles.Neutral.Render("Merged: ") + styles.Branch.Render(sourceBranch) + " → " + styles.Branch.Render(targetBranch),
+		))
 
 		// Handle auto-delete flag
 		deleteFlag, _ := cmd.Flags().GetBool("delete")
 		if deleteFlag {
-			fmt.Printf("Deleting source branch '%s'...\n", sourceBranch)
+			fmt.Println()
+			fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Deleting source branch ") + styles.Branch.Render(sourceBranch) + "... ")
 			if err := exec.Command("git", "branch", "-d", sourceBranch).Run(); err != nil {
-				fmt.Printf("Warning: failed to delete source branch: %v\n", err)
+				fmt.Println(styles.ErrorIcon)
+				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("Could not delete branch: ") + styles.Muted.Render(err.Error()))
 			} else {
-				fmt.Printf("Deleted branch '%s'.\n", sourceBranch)
+				fmt.Println(styles.SuccessIcon)
+				fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("Branch ") + styles.Branch.Render(sourceBranch) + styles.Success.Render(" deleted"))
 			}
 		}
 
 		// Handle auto-push flag
 		pushFlag, _ := cmd.Flags().GetBool("push")
 		if pushFlag {
-			fmt.Printf("Pushing changes...\n")
+			fmt.Println()
+			fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Pushing merged changes... "))
 			if err := pushChanges(); err != nil {
+				fmt.Println(styles.ErrorIcon)
 				return fmt.Errorf("failed to push after merge: %w", err)
 			}
+			fmt.Println(styles.SuccessIcon)
 		}
 
 		return nil
@@ -130,11 +153,17 @@ func selectBranch(prompt string, branch *string) error {
 	}
 
 	// Show selection form
-	return huh.NewSelect[string]().
-		Title(prompt).
-		Options(options...).
-		Value(branch).
-		Run()
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title(styles.Primary.Render(prompt)).
+				Description(styles.Neutral.Render("Choose a branch from the list below")).
+				Options(options...).
+				Value(branch),
+		),
+	).WithTheme(huh.ThemeCharm())
+
+	return form.Run()
 }
 
 func init() {

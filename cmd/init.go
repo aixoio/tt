@@ -5,19 +5,36 @@ import (
 	"os/exec"
 
 	"github.com/spf13/cobra"
+
+	"github.com/aixoio/tt/styles"
 )
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "creates a new tt repo",
-	Long:  `creates a new git repo with tt`,
+	Short: "Initialize a new git repository",
+	Long:  styles.Info.Render("Initialize a new git repository in the current directory."),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Show header
+		fmt.Println(styles.Header.Render("Git Init"))
+		fmt.Println()
+
+		fmt.Print(styles.Spinner.Render("⏳") + " " + styles.Info.Render("Initializing git repository... "))
+
 		err := exec.Command("git", "init").Run()
 		if err != nil {
+			fmt.Println(styles.ErrorIcon)
 			return fmt.Errorf("failed to initialize Git repository: %w", err)
 		}
-		fmt.Println("Initialized a new Git repository.")
+		fmt.Println(styles.SuccessIcon)
+
+		// Show success message with more details
+		fmt.Println()
+		fmt.Println(styles.Card.Render(
+			styles.SuccessIcon + " " + styles.Success.Render("Git repository initialized!") + "\n" +
+				styles.Neutral.Render("Status: ") + styles.Success.Render("Ready to start committing"),
+		))
+
 		return nil
 	},
 }
