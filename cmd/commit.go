@@ -99,7 +99,7 @@ var commitCmd = &cobra.Command{
 		pushFlag, _ := cmd.Flags().GetBool("push")
 		if pushFlag {
 			fmt.Println()
-			fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Pushing changes... "))
+			fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Pushing changes... "))
 			if err := pushChanges(); err != nil {
 				fmt.Println(styles.ErrorIcon)
 				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("Push failed, but commit was successful"))

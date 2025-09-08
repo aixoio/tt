@@ -119,4 +119,8 @@ var (
 	FilePath = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#0891B2")).
 			Italic(true)
+
+	// Spinner icon
+	SpinnerIcon = "⏳"
+
 )

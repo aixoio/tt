@@ -108,7 +108,7 @@ var mergeCmd = &cobra.Command{
 		pushFlag, _ := cmd.Flags().GetBool("push")
 		if pushFlag {
 			fmt.Println()
-			fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Pushing merged changes... "))
+			fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Pushing merged changes... "))
 			if err := pushChanges(); err != nil {
 				fmt.Println(styles.ErrorIcon)
 				return fmt.Errorf("failed to push after merge: %w", err)

@@ -94,7 +94,7 @@ var branchCmd = &cobra.Command{
 		pushFlag, _ := cmd.Flags().GetBool("push")
 		if pushFlag {
 			fmt.Println()
-			fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Pushing branch to remote... "))
+			fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Pushing branch to remote... "))
 			if err := pushChangesToNewBranch(branchName); err != nil {
 				fmt.Println(styles.ErrorIcon)
 				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("Push failed, but branch was created locally"))
