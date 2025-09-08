@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 )
@@ -11,8 +12,13 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "creates a new tt repo",
 	Long:  `creates a new git repo with tt`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("init called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := exec.Command("git", "init").Run()
+		if err != nil {
+			return fmt.Errorf("failed to initialize Git repository: %w", err)
+		}
+		fmt.Println("Initialized a new Git repository.")
+		return nil
 	},
 }
 
