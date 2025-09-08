@@ -46,6 +46,13 @@ var commitCmd = &cobra.Command{
 			return fmt.Errorf("failed to commit: %w", err)
 		}
 
+		pushFlag, _ := cmd.Flags().GetBool("push")
+		if pushFlag {
+			if err := pushChanges(); err != nil {
+				return fmt.Errorf("failed to push after commit: %w", err)
+			}
+		}
+
 		return nil
 	},
 }
@@ -54,4 +61,5 @@ func init() {
 	rootCmd.AddCommand(commitCmd)
 	commitCmd.Flags().StringP("message", "m", "", "Commit message")
 	commitCmd.Flags().BoolP("add", "a", false, "Add all files before committing")
+	commitCmd.Flags().BoolP("push", "p", false, "Push after committing")
 }
