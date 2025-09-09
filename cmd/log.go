@@ -131,6 +131,12 @@ var logCmd = &cobra.Command{
 			return fmt.Errorf("error reading git log output: %w", err)
 		}
 
+		// Check for uncommitted changes
+		statusCmd := exec.Command("git", "status", "--porcelain")
+		if statusOutput, err := statusCmd.Output(); err == nil && len(strings.TrimSpace(string(statusOutput))) > 0 {
+			fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("Uncommitted changes"))
+		}
+
 		return nil
 	},
 }
