@@ -122,5 +122,4 @@ var (
 
 	// Spinner icon
 	SpinnerIcon = "⏳"
-
 )
