@@ -14,7 +14,7 @@ import (
 
 var stashCmd = &cobra.Command{
 	Use:     "stash [message]",
-	Aliases: []string{"s"},
+	Aliases: []string{"st"},
 	Short:   "Stash changes with style",
 	Long:    styles.Info.Render("Stash your changes with an interactive prompt for stash messages. Always includes untracked files for simplicity."),
 	RunE: func(cmd *cobra.Command, args []string) error {
