@@ -31,6 +31,7 @@ Get started by running: `tt init`
 - `tt merge` - Merge branches with conflict resolution
 - `tt push` - Push changes to remote
 - `tt log` - View styled commit history
+- `tt stash` or `tt s` - Stash changes with style
 
 ### Reset Command
 
@@ -90,3 +91,40 @@ This will:
 3. If the branch has unmerged commits, prompt for confirmation to force delete.
 4. For remote branches, require typing the exact phrase "confirm delete remote <branch>" to proceed.
 5. Display success or error messages accordingly.
+
+### Stash Command
+
+The `tt stash` command provides an easy way to stash your changes, always including untracked files for simplicity.
+
+#### Stash changes
+
+```bash
+tt stash "WIP: login fix"
+```
+
+Or without message for interactive prompt:
+
+```bash
+tt stash
+```
+
+This will:
+1. Show a preview of files to be stashed
+2. Prompt for a message if not provided
+3. Stash all changes including untracked files (no need to remember `--include-untracked`)
+
+#### List stashes
+
+```bash
+tt stash list
+```
+
+Shows a simplified list of your stashes with dates and messages.
+
+#### Apply latest stash
+
+```bash
+tt stash pop
+```
+
+Applies the latest stash with confirmation and warns about potential conflicts.
