@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/aixoio/tt/styles"
 )
@@ -50,4 +52,27 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	// Initialize Viper config
+	home, _ := os.UserHomeDir()
+	configDir := filepath.Join(home, ".tt")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(configDir)
+
+	// Bind environment variable for API key
+	viper.BindEnv("api_key", "TT_API_KEY")
+
+	// Set defaults
+	viper.SetDefault("base_url", "https://openrouter.ai/api/v1")
+	viper.SetDefault("default_model", "gpt-3.5-turbo")
+
+	// Read config or create if not exists
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found, create it
+			os.MkdirAll(configDir, 0755)
+			viper.SafeWriteConfig()
+		}
+	}
 }
