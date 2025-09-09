@@ -246,11 +246,12 @@ func makeCommit(message string) error {
 var (
 	autoCommit bool
 	model      string
+	addFlag    bool
 )
 
 var aicCmd = &cobra.Command{
 	Use:     "aic",
-	Aliases: []string{"ai-commit", "ai", "ac"},
+	Aliases: []string{"ai-commit", "ai", "ac", "a"},
 	Short:   "Generate AI-powered commit messages",
 	Long:    styles.Info.Render("Use AI to generate conventional commit messages based on your changes."),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -261,9 +262,25 @@ var aicCmd = &cobra.Command{
 			return fmt.Errorf("API key not set")
 		}
 
+		// Handle alias behavior - 'a' automatically enables auto-commit and add
+		if cmd.CalledAs() == "a" {
+			addFlag = true
+			autoCommit = true
+		}
+
 		// Show header
 		fmt.Println(styles.Header.Render("AI Commit"))
 		fmt.Println()
+
+		// Handle file staging
+		if addFlag {
+			fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Staging all files... "))
+			if err := exec.Command("git", "add", ".").Run(); err != nil {
+				fmt.Println(styles.ErrorIcon)
+				return fmt.Errorf("failed to add files: %w", err)
+			}
+			fmt.Println(styles.SuccessIcon)
+		}
 
 		// Get git diff
 		fmt.Print(styles.InfoIcon + " " + styles.Info.Render("Analyzing changes... "))
@@ -432,4 +449,5 @@ func init() {
 	rootCmd.AddCommand(aicCmd)
 	aicCmd.Flags().BoolVarP(&autoCommit, "commit", "c", false, "Automatically create commit with generated message")
 	aicCmd.Flags().StringVarP(&model, "model", "m", "", "OpenRouter model to use for generation (overrides default_model from config)")
+	aicCmd.Flags().BoolVarP(&addFlag, "add", "a", false, "Add all files before committing")
 }
