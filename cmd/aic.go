@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/sashabaranov/go-openai"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -151,20 +151,6 @@ func getProjectInfo() (string, error) {
 	}
 
 	return projectInfo.String(), nil
-}
-
-// readUserInput reads a single character from the user
-func readUserInput() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return "y", nil
-	}
-	return strings.ToLower(input), nil
 }
 
 // generateCommitMessage uses OpenAI to generate a commit message based on git diff and project information
@@ -321,34 +307,44 @@ var aicCmd = &cobra.Command{
 			}
 			fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("Commit created successfully"))
 		} else {
-			// Ask for confirmation with additional options
-			fmt.Println()
-			fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Options:"))
-			fmt.Println(styles.Neutral.Render("  y/yes - Create commit with this message"))
-			fmt.Println(styles.Neutral.Render("  n/no  - Cancel commit"))
-			fmt.Println(styles.Neutral.Render("  g     - Generate more detailed message"))
-			fmt.Println(styles.Neutral.Render("  r     - Retry with new generation"))
-			fmt.Println(styles.Neutral.Render("  s     - Summarize message"))
-			fmt.Println(styles.Neutral.Render("  p     - Provide feedback for the message"))
-
+			// Interactive options using huh
 			for {
-				fmt.Print(styles.Primary.Render("Create commit with this message? [y/n/g/r/s/p]: "))
+				var selectedOption string
+				var feedback string
 
-				response, err := readUserInput()
-				if err != nil {
-					return fmt.Errorf("error reading user input: %w", err)
+				selectForm := huh.NewForm(
+					huh.NewGroup(
+						huh.NewSelect[string]().
+							Title(styles.Primary.Render("What would you like to do?")).
+							Options(
+								huh.NewOption("✅ Create commit with this message", "commit"),
+								huh.NewOption("❌ Cancel commit", "cancel"),
+								huh.NewOption("🔍 Generate more detailed message", "detailed"),
+								huh.NewOption("🔄 Retry with new generation", "retry"),
+								huh.NewOption("📝 Summarize message", "summarize"),
+								huh.NewOption("💬 Provide feedback for refinement", "feedback"),
+							).
+							Value(&selectedOption),
+					),
+				).WithTheme(huh.ThemeCharm())
+
+				if err := selectForm.Run(); err != nil {
+					return fmt.Errorf("error getting user selection: %w", err)
 				}
 
-				if response == "y" || response == "yes" {
+				switch selectedOption {
+				case "commit":
 					if err := makeCommit(message); err != nil {
 						return err
 					}
 					fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("Commit created successfully"))
-					break
-				} else if response == "n" || response == "no" {
+					return nil
+
+				case "cancel":
 					fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Commit canceled"))
-					break
-				} else if response == "g" {
+					return nil
+
+				case "detailed":
 					fmt.Print(styles.Spinner.Render("🔍") + " " + styles.Info.Render("Generating a more detailed commit message... "))
 					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff+"\n\nPlease provide a more detailed commit message with additional context and explanations.")
 					if err != nil {
@@ -361,7 +357,8 @@ var aicCmd = &cobra.Command{
 						styles.Success.Render("Generated Detailed Commit Message:") + "\n" +
 							styles.Highlight.Render(message),
 					))
-				} else if response == "r" {
+
+				case "retry":
 					fmt.Print(styles.Spinner.Render("🔄") + " " + styles.Info.Render("Retrying with a new generation... "))
 					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff)
 					if err != nil {
@@ -374,7 +371,8 @@ var aicCmd = &cobra.Command{
 						styles.Success.Render("Regenerated Commit Message:") + "\n" +
 							styles.Highlight.Render(message),
 					))
-				} else if response == "s" {
+
+				case "summarize":
 					fmt.Print(styles.Spinner.Render("📝") + " " + styles.Info.Render("Summarizing the commit message... "))
 					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, "Please summarize this commit message in 50 characters or less:\n\n"+message)
 					if err != nil {
@@ -387,14 +385,27 @@ var aicCmd = &cobra.Command{
 						styles.Success.Render("Summarized Commit Message:") + "\n" +
 							styles.Highlight.Render(message),
 					))
-				} else if response == "p" {
-					fmt.Print(styles.Spinner.Render("🔍") + " " + styles.Info.Render("Enter your feedback for the commit message: "))
-					reader := bufio.NewReader(os.Stdin)
-					feedbackLine, err := reader.ReadString('\n')
-					if err != nil {
-						return fmt.Errorf("error reading feedback: %w", err)
+
+				case "feedback":
+					feedbackForm := huh.NewForm(
+						huh.NewGroup(
+							huh.NewInput().
+								Title(styles.Primary.Render("Enter your feedback for the commit message")).
+								Placeholder("e.g., Make it more specific about the database changes").
+								Description("Describe what you'd like to change about the commit message").
+								Value(&feedback).
+								Validate(func(s string) error {
+									if strings.TrimSpace(s) == "" {
+										return fmt.Errorf("feedback cannot be empty")
+									}
+									return nil
+								}),
+						),
+					).WithTheme(huh.ThemeCharm())
+
+					if err := feedbackForm.Run(); err != nil {
+						return fmt.Errorf("error getting feedback: %w", err)
 					}
-					feedback := strings.TrimSpace(feedbackLine)
 
 					fmt.Print(styles.Spinner.Render("🎯") + " " + styles.Info.Render("Generating commit message based on your feedback... "))
 					promptWithGuidance := "Based on this diff:\n\n" + diff + "\n\nAnd considering this feedback: " + feedback + "\n\nGenerate an appropriate commit message."
@@ -409,8 +420,6 @@ var aicCmd = &cobra.Command{
 						styles.Success.Render("Feedback-Based Commit Message:") + "\n" +
 							styles.Highlight.Render(message),
 					))
-				} else {
-					fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Invalid option. Please choose y (yes), n (no), g (generate detailed), r (retry), s (shorter), or p (custom prompt)."))
 				}
 			}
 		}
