@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -83,8 +84,36 @@ var logCmd = &cobra.Command{
 			line := scanner.Text()
 
 			if graph {
-				// For graph mode, we need special handling
-				fmt.Println(styles.Neutral.Render(line))
+				// For graph mode, parse and style components
+				re := regexp.MustCompile(`([0-9a-f]{7,40})`)
+				loc := re.FindStringIndex(line)
+				if loc != nil {
+					graphPart := line[:loc[0]]
+					rest := line[loc[1]:]
+					hash := line[loc[0]:loc[1]]
+					// Parse rest for decorations and message
+					fields := strings.Fields(rest)
+					if len(fields) > 0 && strings.HasPrefix(fields[0], "(") {
+						decorationEnd := strings.Index(rest, ") ")
+						if decorationEnd != -1 {
+							decorations := rest[:decorationEnd+1]
+							message := rest[decorationEnd+2:]
+							styledLine := styles.Muted.Render(graphPart) + styles.CommitHash.Render(hash) + " " + styles.Branch.Render(decorations) + " " + styles.Primary.Render(message)
+							fmt.Println(styledLine)
+						} else {
+							// Malformed, fallback
+							styledLine := styles.Muted.Render(graphPart) + styles.CommitHash.Render(hash) + " " + styles.Primary.Render(rest)
+							fmt.Println(styledLine)
+						}
+					} else {
+						message := rest
+						styledLine := styles.Muted.Render(graphPart) + styles.CommitHash.Render(hash) + " " + styles.Primary.Render(message)
+						fmt.Println(styledLine)
+					}
+				} else {
+					// No hash found, treat as graph-only line
+					fmt.Println(styles.Neutral.Render(line))
+				}
 			} else {
 				// Parse commit hash, decorations, and message
 				fields := strings.Fields(line)
