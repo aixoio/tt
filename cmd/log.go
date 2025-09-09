@@ -33,6 +33,16 @@ var logCmd = &cobra.Command{
 			return fmt.Errorf("not a git repository")
 		}
 
+		// Get current branch
+		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+		branchOutput, err := branchCmd.Output()
+		if err != nil {
+			return fmt.Errorf("failed to get current branch: %w", err)
+		}
+		currentBranch := strings.TrimSpace(string(branchOutput))
+		fmt.Println(styles.Primary.Render("On branch: ") + styles.Branch.Render(currentBranch))
+		fmt.Println()
+
 		// Get upstream commit if exists
 		upstreamHash := ""
 		upstreamCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
