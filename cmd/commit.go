@@ -20,6 +20,11 @@ var commitCmd = &cobra.Command{
 		message, _ := cmd.Flags().GetString("message")
 		addFlag, _ := cmd.Flags().GetBool("add")
 
+		// Auto-add all files when using shorthand 'c'
+		if cmd.CalledAs() == "c" {
+			addFlag = true
+		}
+
 		// Show header
 		fmt.Println(styles.Header.Render("Git Commit"))
 		fmt.Println()
