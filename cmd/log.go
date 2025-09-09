@@ -43,21 +43,8 @@ var logCmd = &cobra.Command{
 		fmt.Println(styles.Primary.Render("On branch: ") + styles.Branch.Render(currentBranch))
 		fmt.Println()
 
-		// Get upstream commit if exists
-		upstreamHash := ""
-		upstreamCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
-		if upstreamOutput, err := upstreamCmd.Output(); err == nil {
-			upstreamBranch := strings.TrimSpace(string(upstreamOutput))
-			if upstreamBranch != "" {
-				hashCmd := exec.Command("git", "rev-parse", upstreamBranch)
-				if hashOutput, err := hashCmd.Output(); err == nil {
-					upstreamHash = strings.TrimSpace(string(hashOutput))[:7] // Short hash
-				}
-			}
-		}
-
 		// Build git log command
-		gitArgs := []string{"log", "--oneline"}
+		gitArgs := []string{"log", "--oneline", "--decorate"}
 
 		// Add reverse flag to show in reverse chronological order
 		gitArgs = append(gitArgs, "--reverse")
@@ -99,27 +86,28 @@ var logCmd = &cobra.Command{
 				// For graph mode, we need special handling
 				fmt.Println(styles.Neutral.Render(line))
 			} else {
-				// Parse commit hash and message
-				parts := strings.SplitN(line, " ", 2)
-				if len(parts) >= 2 {
-					hash := parts[0]
-					message := parts[1]
-
-					// Check if this is the upstream commit
-					shortHash := strings.Trim(hash, "* ")
-					if len(shortHash) > 7 {
-						shortHash = shortHash[:7]
+				// Parse commit hash, decorations, and message
+				fields := strings.Fields(line)
+				if len(fields) >= 2 {
+					hash := fields[0]
+					if strings.HasPrefix(fields[1], "(") {
+						// Find the closing )
+						decorationEnd := strings.Index(line, ") ")
+						if decorationEnd != -1 {
+							decorations := line[len(hash)+1 : decorationEnd+1]
+							message := line[decorationEnd+2:]
+							styledLine := styles.CommitHash.Render(hash) + " " + styles.Branch.Render(decorations) + " " + styles.Primary.Render(message)
+							fmt.Println(styledLine)
+						} else {
+							// Malformed, fallback
+							styledLine := styles.CommitHash.Render(hash) + " " + styles.Primary.Render(strings.Join(fields[1:], " "))
+							fmt.Println(styledLine)
+						}
+					} else {
+						message := strings.Join(fields[1:], " ")
+						styledLine := styles.CommitHash.Render(hash) + " " + styles.Primary.Render(message)
+						fmt.Println(styledLine)
 					}
-
-					// Style the output
-					styledLine := styles.CommitHash.Render(hash) + " " + styles.Primary.Render(message)
-
-					// Add origin marker if this is the upstream commit
-					if shortHash == upstreamHash {
-						styledLine += " " + styles.Highlight.Render("[origin]")
-					}
-
-					fmt.Println(styledLine)
 				} else {
 					// Fallback for any other format
 					fmt.Println(styles.Neutral.Render(line))
