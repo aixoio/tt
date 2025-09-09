@@ -21,6 +21,7 @@ Features:
 • ` + styles.Highlight.Render(`Interactive prompts`) + ` for commit messages and branch names
 • ` + styles.Highlight.Render(`Smart defaults`) + ` for common git operations
 • ` + styles.Highlight.Render(`Beautiful styling`) + ` with clear visual feedback
+• ` + styles.Highlight.Render(`Beautiful log view`) + ` with styled commit history and graph support
 • ` + styles.Highlight.Render(`Auto-push`) + ` and upstream management
 • ` + styles.Highlight.Render(`Conflict-aware`) + ` merge operations
 
