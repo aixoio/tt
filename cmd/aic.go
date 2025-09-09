@@ -247,6 +247,7 @@ var (
 	autoCommit bool
 	model      string
 	addFlag    bool
+	pushFlag   bool
 )
 
 var aicCmd = &cobra.Command{
@@ -323,6 +324,16 @@ var aicCmd = &cobra.Command{
 				return err
 			}
 			fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("Commit created successfully"))
+
+			// Handle auto-push
+			if pushFlag {
+				fmt.Println()
+				fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Pushing changes... "))
+				if err := pushChanges(); err != nil {
+					fmt.Println(styles.Warning.Render("Push failed, but commit was successful"))
+					return fmt.Errorf("failed to push after commit: %w", err)
+				}
+			}
 		} else {
 			// Interactive options using huh
 			for {
@@ -355,6 +366,16 @@ var aicCmd = &cobra.Command{
 						return err
 					}
 					fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("Commit created successfully"))
+
+					// Handle auto-push
+					if pushFlag {
+						fmt.Println()
+						fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Pushing changes... "))
+						if err := pushChanges(); err != nil {
+							fmt.Println(styles.Warning.Render("Push failed, but commit was successful"))
+							return fmt.Errorf("failed to push after commit: %w", err)
+						}
+					}
 					return nil
 
 				case "cancel":
@@ -450,4 +471,5 @@ func init() {
 	aicCmd.Flags().BoolVarP(&autoCommit, "commit", "c", false, "Automatically create commit with generated message")
 	aicCmd.Flags().StringVarP(&model, "model", "m", "", "OpenRouter model to use for generation (overrides default_model from config)")
 	aicCmd.Flags().BoolVarP(&addFlag, "add", "a", false, "Add all files before committing")
+	aicCmd.Flags().BoolVarP(&pushFlag, "push", "p", false, "Push after committing")
 }
