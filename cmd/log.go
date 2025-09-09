@@ -18,6 +18,7 @@ var logCmd = &cobra.Command{
 	Short:   "Show commit history with beautiful formatting",
 	Long:    "Display git commit history in a styled, readable format similar to git log --oneline",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		full, _ := cmd.Flags().GetBool("full")
 		count, _ := cmd.Flags().GetInt("count")
 		all, _ := cmd.Flags().GetBool("all")
 		graph, _ := cmd.Flags().GetBool("graph")
@@ -32,10 +33,29 @@ var logCmd = &cobra.Command{
 			return fmt.Errorf("not a git repository")
 		}
 
+		// Get upstream commit if exists
+		upstreamHash := ""
+		upstreamCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+		if upstreamOutput, err := upstreamCmd.Output(); err == nil {
+			upstreamBranch := strings.TrimSpace(string(upstreamOutput))
+			if upstreamBranch != "" {
+				hashCmd := exec.Command("git", "rev-parse", upstreamBranch)
+				if hashOutput, err := hashCmd.Output(); err == nil {
+					upstreamHash = strings.TrimSpace(string(hashOutput))[:7] // Short hash
+				}
+			}
+		}
+
 		// Build git log command
 		gitArgs := []string{"log", "--oneline"}
 
-		if count > 0 {
+		// Add reverse flag to show in reverse chronological order
+		gitArgs = append(gitArgs, "--reverse")
+
+		// Set default count to 10 if not full
+		if !full && count == 10 {
+			gitArgs = append(gitArgs, "-n10")
+		} else if !full && count > 0 {
 			gitArgs = append(gitArgs, fmt.Sprintf("-n%d", count))
 		}
 
@@ -60,7 +80,9 @@ var logCmd = &cobra.Command{
 
 		// Process output line by line
 		scanner := bufio.NewScanner(stdout)
+		hasOutput := false
 		for scanner.Scan() {
+			hasOutput = true
 			line := scanner.Text()
 
 			if graph {
@@ -73,14 +95,31 @@ var logCmd = &cobra.Command{
 					hash := parts[0]
 					message := parts[1]
 
+					// Check if this is the upstream commit
+					shortHash := strings.Trim(hash, "* ")
+					if len(shortHash) > 7 {
+						shortHash = shortHash[:7]
+					}
+
 					// Style the output
 					styledLine := styles.CommitHash.Render(hash) + " " + styles.Primary.Render(message)
+
+					// Add origin marker if this is the upstream commit
+					if shortHash == upstreamHash {
+						styledLine += " " + styles.Highlight.Render("[origin]")
+					}
+
 					fmt.Println(styledLine)
 				} else {
 					// Fallback for any other format
 					fmt.Println(styles.Neutral.Render(line))
 				}
 			}
+		}
+
+		// Show message if no commits
+		if !hasOutput {
+			fmt.Println(styles.InfoIcon + " " + styles.Info.Render("No commits found"))
 		}
 
 		if err := gitCmd.Wait(); err != nil {
@@ -98,7 +137,8 @@ var logCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().IntP("count", "n", 0, "Limit the number of commits to show")
+	logCmd.Flags().BoolP("full", "f", false, "Show all commits (default: show last 10)")
+	logCmd.Flags().IntP("count", "n", 10, "Number of commits to show (ignored with --full)")
 	logCmd.Flags().BoolP("all", "a", false, "Show all branches")
 	logCmd.Flags().BoolP("graph", "g", false, "Show graph")
 }
