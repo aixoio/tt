@@ -11,7 +11,7 @@ import (
 )
 
 var keySetCmd = &cobra.Command{
-	Use:   "key-set",
+	Use:   "set",
 	Short: "Set configuration values",
 	Long:  styles.Info.Render("Set your API key, base URL, or default model for AI features."),
 	RunE: func(cmd *cobra.Command, args []string) error {

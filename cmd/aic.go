@@ -259,7 +259,7 @@ var aicCmd = &cobra.Command{
 		// Check if API key is set
 		apiKey := viper.GetString("api_key")
 		if apiKey == "" {
-			fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("API key not set. Run 'tt key-set' to configure it."))
+			fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("API key not set. Run 'tt set' to configure it."))
 			return fmt.Errorf("API key not set")
 		}
 

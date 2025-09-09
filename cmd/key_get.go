@@ -10,7 +10,7 @@ import (
 )
 
 var keyGetCmd = &cobra.Command{
-	Use:   "key-get",
+	Use:   "get",
 	Short: "Get the current configuration values",
 	Long:  styles.Info.Render("Display the current API key, base URL, and default model."),
 	RunE: func(cmd *cobra.Command, args []string) error {
