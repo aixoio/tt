@@ -3,31 +3,19 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go/v2"
+	"github.com/openai/openai-go/v2/option"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/aixoio/tt/styles"
 )
-
-type headerTransport struct {
-	rt      http.RoundTripper
-	headers map[string]string
-}
-
-func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	for k, v := range t.headers {
-		req.Header.Set(k, v)
-	}
-	return t.rt.RoundTrip(req)
-}
 
 // getGitDiff gets the current changes in the git repository
 func getGitDiff() (string, error) {
@@ -192,27 +180,18 @@ func generateCommitMessage(apiKey, baseURL, model, diff string) (string, error) 
 	prompt += fileListStr + "Changes:\n" + diff
 
 	// Initialize OpenAI client with OpenRouter
-	config := openai.DefaultConfig(apiKey)
-	config.BaseURL = baseURL
-	config.HTTPClient = &http.Client{
-		Transport: &headerTransport{
-			rt: http.DefaultTransport,
-			headers: map[string]string{
-				"HTTP-Referer": "https://github.com/aixoio/tt",
-				"X-Title":      "tt",
-			},
-		},
-	}
-	client := openai.NewClientWithConfig(config)
 
-	// Create request
-	resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	client := openai.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithHeader("HTTP-Referer", "https://github.com/aixoio/tt"),
+		option.WithHeader("X-Title", "tt"),
+		option.WithAPIKey(apiKey),
+	)
+
+	resp, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
 		Model: model,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: prompt,
-			},
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(prompt),
 		},
 	})
 	if err != nil {
