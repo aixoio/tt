@@ -302,13 +302,14 @@ var aicCmd = &cobra.Command{
 		fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Using model: ") + styles.Highlight.Render(modelToUse))
 
 		// Generate commit message
-		fmt.Print(styles.Spinner.Render("🤖") + " " + styles.Info.Render("Generating commit message... "))
-		message, err := generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff)
+		message, err := runWithSpinnerForMessage("🤖 Generating commit message...", func() (string, error) {
+			return generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff)
+		})
 		if err != nil {
-			fmt.Println(styles.ErrorIcon)
+			fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate commit message"))
 			return err
 		}
-		fmt.Println(styles.SuccessIcon)
+		fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("Commit message generated successfully"))
 
 		// Output commit message with prominent formatting
 		fmt.Println()
@@ -383,8 +384,9 @@ var aicCmd = &cobra.Command{
 					return nil
 
 				case "detailed":
-					fmt.Print(styles.Spinner.Render("🔍") + " " + styles.Info.Render("Generating a more detailed commit message... "))
-					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff+"\n\nPlease provide a more detailed commit message with additional context and explanations.")
+					message, err = runWithSpinnerForMessage("🔍 Generating a more detailed commit message...", func() (string, error) {
+						return generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff+"\n\nPlease provide a more detailed commit message with additional context and explanations.")
+					})
 					if err != nil {
 						fmt.Println(styles.ErrorIcon)
 						return err
@@ -397,8 +399,9 @@ var aicCmd = &cobra.Command{
 					))
 
 				case "retry":
-					fmt.Print(styles.Spinner.Render("🔄") + " " + styles.Info.Render("Retrying with a new generation... "))
-					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff)
+					message, err = runWithSpinnerForMessage("🔄 Retrying with a new generation...", func() (string, error) {
+						return generateCommitMessage(apiKey, viper.GetString("base_url"), model, diff)
+					})
 					if err != nil {
 						fmt.Println(styles.ErrorIcon)
 						return err
@@ -411,8 +414,9 @@ var aicCmd = &cobra.Command{
 					))
 
 				case "summarize":
-					fmt.Print(styles.Spinner.Render("📝") + " " + styles.Info.Render("Summarizing the commit message... "))
-					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, "Please summarize this commit message in 50 characters or less:\n\n"+message)
+					message, err = runWithSpinnerForMessage("📝 Summarizing the commit message...", func() (string, error) {
+						return generateCommitMessage(apiKey, viper.GetString("base_url"), model, "Please summarize this commit message in 50 characters or less:\n\n"+message)
+					})
 					if err != nil {
 						fmt.Println(styles.ErrorIcon)
 						return err
@@ -445,9 +449,10 @@ var aicCmd = &cobra.Command{
 						return fmt.Errorf("error getting feedback: %w", err)
 					}
 
-					fmt.Print(styles.Spinner.Render("🎯") + " " + styles.Info.Render("Generating commit message based on your feedback... "))
 					promptWithGuidance := "Based on this diff:\n\n" + diff + "\n\nAnd considering this feedback: " + feedback + "\n\nGenerate an appropriate commit message."
-					message, err = generateCommitMessage(apiKey, viper.GetString("base_url"), model, promptWithGuidance)
+					message, err = runWithSpinnerForMessage("🎯 Generating commit message based on your feedback...", func() (string, error) {
+						return generateCommitMessage(apiKey, viper.GetString("base_url"), model, promptWithGuidance)
+					})
 					if err != nil {
 						fmt.Println(styles.ErrorIcon)
 						return err
