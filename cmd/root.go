@@ -65,7 +65,7 @@ func init() {
 
 	// Set defaults
 	viper.SetDefault("base_url", "https://openrouter.ai/api/v1")
-	viper.SetDefault("default_model", "gpt-3.5-turbo")
+	viper.SetDefault("default_model", "google/gemini-2.5-flash-lite")
 
 	// Read config or create if not exists
 	if err := viper.ReadInConfig(); err != nil {
