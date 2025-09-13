@@ -25,6 +25,7 @@ Get started by running: `tt init`
 ### Commands
 
 - `tt init` - Initialize a new git repository
+- `tt add` or `tt ad` - Stage files for commit
 - `tt commit` or `tt c` - Commit changes with style
 - `tt reset` - Hard-reset the repository after confirmation
 - `tt branch` - Create, switch, and list git branches
@@ -128,3 +129,28 @@ tt stash pop
 ```
 
 Applies the latest stash with confirmation and warns about potential conflicts.
+
+### Add Command
+
+The `tt add` command stages files for commit, mirroring `git add` with styled output.
+
+#### Stage all changes
+
+```bash
+tt add -A
+# or
+tt add --all
+```
+
+#### Stage specific files or directories
+
+```bash
+tt add file.txt
+tt add src/
+tt add -p file1.txt -p file2.txt
+```
+
+This will:
+1. Display a header and progress indicator
+2. Execute `git add` with the specified files
+3. Show success or error messages with styling
