@@ -73,11 +73,19 @@ var revertCmd = &cobra.Command{
 			return err
 		}
 
+		// Get diff stats for the commit
+		diffStats, err := getRevertDiffStats(targetCommit)
+		if err != nil {
+			return err
+		}
+
 		fmt.Println(styles.Card.Render(
 			styles.Info.Render("Commit to revert:") + "\n" +
 				styles.CommitHash.Render(commitDetails.Hash) + " " + styles.Primary.Render(commitDetails.Message) + "\n" +
 				styles.Neutral.Render("Author: ") + styles.Highlight.Render(commitDetails.Author) + "\n" +
-				styles.Neutral.Render("Date: ") + styles.Muted.Render(commitDetails.Date),
+				styles.Neutral.Render("Date: ") + styles.Muted.Render(commitDetails.Date) + "\n\n" +
+				styles.Info.Render("Files that will be reverted:") + "\n" +
+				diffStats,
 		))
 		fmt.Println()
 
@@ -253,6 +261,61 @@ func getCommitDetails(hash string) (*CommitInfo, error) {
 	}, nil
 }
 
+func getRevertDiffStats(hash string) (string, error) {
+	// Get diff stats for the commit that will be reverted
+	cmd := exec.Command("git", "show", "--stat", "--format=", hash)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get diff stats: %w", err)
+	}
+
+	// Parse and format the diff stats
+	stats := strings.TrimSpace(string(output))
+	if stats == "" {
+		return "No file changes in this commit", nil
+	}
+
+	// Format the stats with styling
+	lines := strings.Split(stats, "\n")
+	var formattedStats []string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Check if this is a file line (contains | and numbers)
+		if strings.Contains(line, "|") && (strings.Contains(line, "+") || strings.Contains(line, "-")) {
+			// This is a file stat line like "file.txt | 5 +--"
+			parts := strings.Split(line, "|")
+			if len(parts) >= 2 {
+				fileName := strings.TrimSpace(parts[0])
+				changeStats := strings.TrimSpace(parts[1])
+
+				// Style the file name
+				styledFile := styles.FilePath.Render(fileName)
+
+				// Style the change stats (additions in green, deletions in red)
+				changeStats = strings.ReplaceAll(changeStats, "+", styles.Success.Render("+"))
+				changeStats = strings.ReplaceAll(changeStats, "-", styles.Error.Render("-"))
+
+				formattedStats = append(formattedStats, fmt.Sprintf("  %s | %s", styledFile, changeStats))
+			}
+		} else if strings.Contains(line, "file") && strings.Contains(line, "changed") {
+			// This is the summary line like "2 files changed, 15 insertions(+), 8 deletions(-)"
+			summaryLine := strings.ReplaceAll(line, "insertions(+)", styles.Success.Render("insertions(+)"))
+			summaryLine = strings.ReplaceAll(summaryLine, "deletions(-)", styles.Error.Render("deletions(-)"))
+			formattedStats = append(formattedStats, styles.Highlight.Render(summaryLine))
+		} else {
+			// Regular line
+			formattedStats = append(formattedStats, styles.Neutral.Render(line))
+		}
+	}
+
+	return strings.Join(formattedStats, "\n"), nil
+}
+
 func performRevert(hash string) error {
 	fmt.Print(styles.SpinnerIcon + " " + styles.Info.Render("Preparing revert... "))
 
@@ -283,7 +346,16 @@ func performRevert(hash string) error {
 	// No conflicts, create the revert commit
 	fmt.Print(styles.SpinnerIcon + " " + styles.Info.Render("Creating revert commit... "))
 
-	commitCmd := exec.Command("git", "commit", "-m", fmt.Sprintf("Revert \"%s\"", hash))
+	// Get commit details for the revert message
+	commitDetails, err := getCommitDetails(hash)
+	if err != nil {
+		fmt.Println(styles.ErrorIcon)
+		return fmt.Errorf("failed to get commit details for revert message: %w", err)
+	}
+
+	// Create revert commit message in format: "revert [hash]: [original message]"
+	revertMessage := fmt.Sprintf("revert %s: %s", hash, commitDetails.Message)
+	commitCmd := exec.Command("git", "commit", "-m", revertMessage)
 	commitCmd.Stdout = os.Stdout
 	commitCmd.Stderr = os.Stderr
 
@@ -296,7 +368,7 @@ func performRevert(hash string) error {
 
 	fmt.Println(styles.Card.Render(
 		styles.Success.Render("Revert successful!") + "\n" +
-			styles.Neutral.Render("Created a new commit that undoes the changes from ") + styles.CommitHash.Render(hash),
+			styles.Neutral.Render("Created commit: ") + styles.Highlight.Render(revertMessage),
 	))
 
 	return nil
