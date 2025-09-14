@@ -25,14 +25,23 @@ Get started by running: `tt init`
 ### Commands
 
 - `tt init` - Initialize a new git repository
-- `tt add` or `tt ad` - Stage files for commit
-- `tt commit` or `tt c` - Commit changes with style
+- `tt add` - Stage files for commit
+- `tt c` or `tt commit` - Commit changes with style
 - `tt reset` - Hard-reset the repository after confirmation
 - `tt branch` - Create, switch, and list git branches
-- `tt merge` - Merge branches with conflict resolution
-- `tt push` - Push changes to remote
-- `tt log` - View styled commit history
-- `tt stash` or `tt s` - Stash changes with style
+- `tt merge` - Merge branches with intelligent conflict handling
+- `tt push` - Push changes to remote repository
+- `tt pull` - Pull changes from remote repository
+- `tt clone` - Clone a repository into a new directory
+- `tt log` - Show commit history with beautiful formatting
+- `tt stash` - Stash changes with style
+- `tt status` - Show git repository status
+- `tt tag` - Create and manage git tags
+- `tt revert` - Revert a commit by creating a new commit that undoes the changes
+- `tt aic` - Generate AI-powered commit messages
+- `tt ap` - Generate AI commit message and push changes
+- `tt get` - Get the current configuration values
+- `tt set` - Set configuration values
 
 ### Reset Command
 
