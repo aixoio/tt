@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/huh"
 	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/option"
 	"github.com/spf13/cobra"
@@ -179,57 +178,9 @@ var diffCmd = &cobra.Command{
 					fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate AI overview"))
 				} else {
 					fmt.Println()
-					fmt.Println(styles.Card.Render(styles.Highlight.Render("AI Overview:") + "\n" + styles.Info.Render(summary)))
+					fmt.Println(styles.Info.Render("AI Overview:"))
+					fmt.Println(styles.Info.Render(summary))
 					fmt.Println()
-
-					// Huh interactivity loop
-					for {
-						var selectedOption string
-
-						selectForm := huh.NewForm(
-							huh.NewGroup(
-								huh.NewSelect[string]().
-									Title(styles.Primary.Render("What would you like to do with the AI summary?")).
-									Options(
-										huh.NewOption("✅ Use this summary", "use"),
-										huh.NewOption("🔄 Regenerate summary", "regenerate"),
-										huh.NewOption("📝 Make more detailed", "detailed"),
-										huh.NewOption("❌ Skip AI features", "skip"),
-									).
-									Value(&selectedOption),
-							),
-						).WithTheme(huh.ThemeCharm())
-
-						if err := selectForm.Run(); err != nil {
-							return fmt.Errorf("error getting selection: %w", err)
-						}
-
-						switch selectedOption {
-						case "use", "skip":
-							return nil
-						case "regenerate":
-							summary, err = runWithSpinnerForMessage("🔄 Regenerating AI summary...", func() (string, error) {
-								return generateAIResponse(apiKey, viper.GetString("base_url"), model, basePrompt)
-							})
-							if err != nil {
-								fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to regenerate summary"))
-								return err
-							}
-							fmt.Println()
-							fmt.Println(styles.Card.Render(styles.Highlight.Render("Regenerated AI Overview:") + "\n" + styles.Info.Render(summary)))
-						case "detailed":
-							detailedPrompt := basePrompt + "\n\n" + "Provide a more detailed summary (4-5 sentences), including specifics about the implementation and impact of the changes."
-							summary, err = runWithSpinnerForMessage("📝 Generating detailed AI summary...", func() (string, error) {
-								return generateAIResponse(apiKey, viper.GetString("base_url"), model, detailedPrompt)
-							})
-							if err != nil {
-								fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate detailed summary"))
-								return err
-							}
-							fmt.Println()
-							fmt.Println(styles.Card.Render(styles.Highlight.Render("Detailed AI Overview:") + "\n" + styles.Info.Render(summary)))
-						}
-					}
 				}
 			}
 		}
