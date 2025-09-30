@@ -38,10 +38,51 @@ Get started by running: `tt init`
 - `tt status` - Show git repository status
 - `tt tag` - Create and manage git tags
 - `tt revert` - Revert a commit by creating a new commit that undoes the changes
+- `tt diff` - Show styled git diff with optional AI overview
 - `tt aic` - Generate AI-powered commit messages
 - `tt ap` - Generate AI commit message and push changes
 - `tt get` - Get the current configuration values
 - `tt set` - Set configuration values
+
+### Diff Command
+
+The `tt diff` command displays git changes with enhanced styling and optional AI-powered overview.
+
+```bash
+tt diff
+```
+
+#### With AI Overview
+
+Generate an AI summary of your changes:
+
+```bash
+tt diff --ai
+# or
+tt diff -a
+```
+
+#### Show stat summary
+
+```bash
+tt diff --stat
+# or
+tt diff -s
+```
+
+#### Show only file names
+
+```bash
+tt diff --name-only
+# or
+tt diff -n
+```
+
+This will:
+1. Display changes with color-coded additions (green) and deletions (red)
+2. Style diff headers with bold blue
+3. Optionally generate AI summary explaining what the changes achieve
+4. Support all standard git diff arguments (e.g., `tt diff HEAD~1`, `tt diff main..feature`)
 
 ### Reset Command
 

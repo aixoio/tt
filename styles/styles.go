@@ -120,6 +120,17 @@ var (
 			Foreground(lipgloss.Color("#0891B2")).
 			Italic(true)
 
+	// Diff styles
+	DiffHeader = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#2563EB"))
+
+	Add = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#10B981"))
+
+	Del = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#EF4444"))
+
 	// Spinner icon
 	SpinnerIcon = "⏳"
 )
