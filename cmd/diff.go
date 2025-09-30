@@ -178,6 +178,8 @@ var diffCmd = &cobra.Command{
 				sb.WriteString("Changes:\n" + diffContent)
 				basePrompt := sb.String()
 
+				fmt.Printf("%s %s: %s\n\n", styles.InfoIcon, styles.Info.Render("Using model"), styles.Highlight.Render(model))
+
 				summary, err := runWithSpinnerForMessage("🤖 Generating AI overview...", func() (string, error) {
 					return generateAIResponse(apiKey, viper.GetString("base_url"), model, basePrompt)
 				})
