@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/option"
 	"github.com/spf13/cobra"
@@ -159,9 +160,9 @@ var diffCmd = &cobra.Command{
 					}
 				}
 
-				// Build prompt
+				// Build prompt for markdown
 				var sb strings.Builder
-				sb.WriteString("Provide a concise summary (2-3 sentences) of the code changes in this git diff. Focus on what the changes achieve, such as new features, bug fixes, or refactors. Only respond with the summary, nothing else.\n\n")
+				sb.WriteString("Provide a concise markdown-formatted summary (2-3 sentences, use **bold** for key changes, - bullets for files/features) of the code changes in this git diff. Focus on what the changes achieve, such as new features, bug fixes, or refactors. Only respond with the markdown summary, nothing else.\n\n")
 				if projectInfoStr != "" {
 					sb.WriteString(projectInfoStr + "\n\n")
 				}
@@ -178,8 +179,15 @@ var diffCmd = &cobra.Command{
 					fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate AI overview"))
 				} else {
 					fmt.Println()
-					fmt.Println(styles.Info.Render("AI Overview:"))
-					fmt.Println(styles.Info.Render(summary))
+					fmt.Println(styles.Info.Render("🤖 AI Overview:"))
+					fmt.Println()
+
+					rendered, err := glamour.Render(summary, "dark")
+					if err != nil {
+						fmt.Println(styles.Info.Render(summary)) // Fallback
+					} else {
+						fmt.Print(rendered)
+					}
 					fmt.Println()
 				}
 			}
