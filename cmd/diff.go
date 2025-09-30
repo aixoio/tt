@@ -95,7 +95,13 @@ var diffCmd = &cobra.Command{
 			if apiKey == "" {
 				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("API key not set. Skipping AI overview. Run 'tt set' to configure."))
 			} else {
-				model := viper.GetString("default_model")
+				model := viper.GetString("diff_model")
+				if model == "" {
+					model = viper.GetString("default_model")
+				}
+				if model == "" {
+					model = "google/gemini-2.5-flash-lite"
+				}
 
 				// Inline getProjectInfo
 				projectInfoStr := ""

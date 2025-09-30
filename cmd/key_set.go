@@ -27,6 +27,7 @@ var keySetCmd = &cobra.Command{
 						huh.NewOption("API Key", "api_key"),
 						huh.NewOption("Base URL", "base_url"),
 						huh.NewOption("Default Model", "default_model"),
+						huh.NewOption("Diff Model", "diff_model"),
 					).
 					Value(&configOption),
 			),
@@ -73,6 +74,18 @@ var keySetCmd = &cobra.Command{
 				Validate(func(s string) error {
 					if s == "" {
 						return fmt.Errorf("default model cannot be empty")
+					}
+					return nil
+				})
+		case "diff_model":
+			input = huh.NewInput().
+				Title(styles.Primary.Render("Diff Model")).
+				Placeholder("google/gemini-2.5-flash-lite").
+				Description("Enter the model for AI diff summaries").
+				Value(&value).
+				Validate(func(s string) error {
+					if s == "" {
+						return fmt.Errorf("diff model cannot be empty")
 					}
 					return nil
 				})

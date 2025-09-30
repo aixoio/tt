@@ -17,6 +17,7 @@ var keyGetCmd = &cobra.Command{
 		apiKey := viper.GetString("api_key")
 		baseURL := viper.GetString("base_url")
 		defaultModel := viper.GetString("default_model")
+		diffModel := viper.GetString("diff_model")
 
 		fmt.Println(styles.Header.Render("Current Configuration"))
 		fmt.Println()
@@ -29,6 +30,7 @@ var keyGetCmd = &cobra.Command{
 
 		fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Base URL: ") + styles.Highlight.Render(baseURL))
 		fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Default Model: ") + styles.Highlight.Render(defaultModel))
+		fmt.Println(styles.InfoIcon + " " + styles.Info.Render("Diff Model: ") + styles.Highlight.Render(diffModel))
 
 		return nil
 	},
