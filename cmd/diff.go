@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/option"
 	"github.com/spf13/cobra"
@@ -41,25 +43,6 @@ var diffCmd = &cobra.Command{
 		if diffContent == "" {
 			fmt.Println(styles.SuccessIcon + " " + styles.Success.Render("No changes to display"))
 			return nil
-		}
-
-		if aiFlag {
-			apiKey := viper.GetString("api_key")
-			if apiKey == "" {
-				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("API key not set. Skipping AI overview. Run 'tt set' to configure."))
-			} else {
-				model := viper.GetString("default_model")
-				summary, err := runWithSpinnerForMessage("🤖 Generating AI overview...", func() (string, error) {
-					return generateDiffSummary(apiKey, viper.GetString("base_url"), model, diffContent)
-				})
-				if err != nil {
-					fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate AI overview"))
-				} else {
-					fmt.Println()
-					fmt.Println(styles.Card.Render(styles.Highlight.Render("AI Overview:") + "\n" + styles.Info.Render(summary)))
-					fmt.Println()
-				}
-			}
 		}
 
 		fmt.Println(styles.Header.Render("Git Diff"))
@@ -107,16 +90,158 @@ var diffCmd = &cobra.Command{
 			}
 		}
 
+		if aiFlag {
+			apiKey := viper.GetString("api_key")
+			if apiKey == "" {
+				fmt.Println(styles.WarningIcon + " " + styles.Warning.Render("API key not set. Skipping AI overview. Run 'tt set' to configure."))
+			} else {
+				model := viper.GetString("default_model")
+
+				// Inline getProjectInfo
+				projectInfoStr := ""
+				files, err := filepath.Glob("*")
+				if err != nil {
+					fmt.Printf("%s Warning: couldn't get project info: %v\n", styles.WarningIcon, err)
+				} else {
+					var projectInfo strings.Builder
+					projectInfo.WriteString("Project files include: ")
+
+					hasGoMod := false
+					hasPackageJSON := false
+					hasPomXML := false
+					hasCMake := false
+					hasPyProject := false
+
+					for _, file := range files {
+						switch file {
+						case "go.mod":
+							hasGoMod = true
+						case "package.json":
+							hasPackageJSON = true
+						case "pom.xml":
+							hasPomXML = true
+						case "CMakeLists.txt":
+							hasCMake = true
+						case "pyproject.toml":
+							hasPyProject = true
+						}
+					}
+
+					if hasGoMod {
+						projectInfo.WriteString("Go project. ")
+					}
+					if hasPackageJSON {
+						projectInfo.WriteString("JavaScript/Node.js project. ")
+					}
+					if hasPomXML {
+						projectInfo.WriteString("Java/Maven project. ")
+					}
+					if hasCMake {
+						projectInfo.WriteString("C/C++ project with CMake. ")
+					}
+					if hasPyProject {
+						projectInfo.WriteString("Python project. ")
+					}
+					projectInfoStr = projectInfo.String()
+				}
+
+				// Inline getChangedFiles
+				changedFiles := []string{}
+				changedCmd := exec.Command("git", append([]string{"diff", "--name-only"}, args...)...)
+				changedOutput, err := changedCmd.Output()
+				if err != nil {
+					fmt.Printf("%s Warning: couldn't get changed files: %v\n", styles.WarningIcon, err)
+				} else {
+					namesList := strings.Split(strings.TrimSpace(string(changedOutput)), "\n")
+					for _, n := range namesList {
+						if n != "" {
+							changedFiles = append(changedFiles, n)
+						}
+					}
+				}
+
+				// Build prompt
+				var sb strings.Builder
+				sb.WriteString("Provide a concise summary (2-3 sentences) of the code changes in this git diff. Focus on what the changes achieve, such as new features, bug fixes, or refactors. Only respond with the summary, nothing else.\n\n")
+				if projectInfoStr != "" {
+					sb.WriteString(projectInfoStr + "\n\n")
+				}
+				if len(changedFiles) > 0 {
+					sb.WriteString(fmt.Sprintf("Changed files: %s\n\n", strings.Join(changedFiles, ", ")))
+				}
+				sb.WriteString("Changes:\n" + diffContent)
+				basePrompt := sb.String()
+
+				summary, err := runWithSpinnerForMessage("🤖 Generating AI overview...", func() (string, error) {
+					return generateAIResponse(apiKey, viper.GetString("base_url"), model, basePrompt)
+				})
+				if err != nil {
+					fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate AI overview"))
+				} else {
+					fmt.Println()
+					fmt.Println(styles.Card.Render(styles.Highlight.Render("AI Overview:") + "\n" + styles.Info.Render(summary)))
+					fmt.Println()
+
+					// Huh interactivity loop
+					for {
+						var selectedOption string
+
+						selectForm := huh.NewForm(
+							huh.NewGroup(
+								huh.NewSelect[string]().
+									Title(styles.Primary.Render("What would you like to do with the AI summary?")).
+									Options(
+										huh.NewOption("✅ Use this summary", "use"),
+										huh.NewOption("🔄 Regenerate summary", "regenerate"),
+										huh.NewOption("📝 Make more detailed", "detailed"),
+										huh.NewOption("❌ Skip AI features", "skip"),
+									).
+									Value(&selectedOption),
+							),
+						).WithTheme(huh.ThemeCharm())
+
+						if err := selectForm.Run(); err != nil {
+							return fmt.Errorf("error getting selection: %w", err)
+						}
+
+						switch selectedOption {
+						case "use", "skip":
+							return nil
+						case "regenerate":
+							summary, err = runWithSpinnerForMessage("🔄 Regenerating AI summary...", func() (string, error) {
+								return generateAIResponse(apiKey, viper.GetString("base_url"), model, basePrompt)
+							})
+							if err != nil {
+								fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to regenerate summary"))
+								return err
+							}
+							fmt.Println()
+							fmt.Println(styles.Card.Render(styles.Highlight.Render("Regenerated AI Overview:") + "\n" + styles.Info.Render(summary)))
+						case "detailed":
+							detailedPrompt := basePrompt + "\n\n" + "Provide a more detailed summary (4-5 sentences), including specifics about the implementation and impact of the changes."
+							summary, err = runWithSpinnerForMessage("📝 Generating detailed AI summary...", func() (string, error) {
+								return generateAIResponse(apiKey, viper.GetString("base_url"), model, detailedPrompt)
+							})
+							if err != nil {
+								fmt.Println(styles.ErrorIcon + " " + styles.Error.Render("Failed to generate detailed summary"))
+								return err
+							}
+							fmt.Println()
+							fmt.Println(styles.Card.Render(styles.Highlight.Render("Detailed AI Overview:") + "\n" + styles.Info.Render(summary)))
+						}
+					}
+				}
+			}
+		}
+
 		return nil
 	},
 }
 
-func generateDiffSummary(apiKey, baseURL, model, diff string) (string, error) {
+func generateAIResponse(apiKey, baseURL, model, prompt string) (string, error) {
 	if model == "" {
 		model = viper.GetString("default_model")
 	}
-
-	prompt := "Provide a concise summary (2-3 sentences) of the code changes in this git diff. Focus on what the changes achieve, such as new features, bug fixes, or refactors. Only respond with the summary, nothing else.\n\nChanges:\n" + diff
 
 	client := openai.NewClient(
 		option.WithBaseURL(baseURL),
@@ -130,7 +255,7 @@ func generateDiffSummary(apiKey, baseURL, model, diff string) (string, error) {
 		Messages: []openai.ChatCompletionMessageParamUnion{openai.UserMessage(prompt)},
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to generate summary: %w", err)
+		return "", fmt.Errorf("failed to generate AI response: %w", err)
 	}
 
 	if len(resp.Choices) == 0 {
