@@ -79,8 +79,6 @@ var (
 
 	// Card styles for important information
 	Card = lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#2563EB")).
 		Padding(1, 2).
 		MarginBottom(1)
 
