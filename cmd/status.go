@@ -52,21 +52,40 @@ var statusCmd = &cobra.Command{
 			if len(line) < 3 {
 				continue
 			}
+			// Git status --porcelain format: XY filename
+			// where X is staged status, Y is unstaged status (or space)
+			// Filename starts after first 2 characters and a space
 			statusCode := line[:2]
-			fileName := line[3:]
+			fileName := strings.TrimLeft(line[2:], " ") // Skip status code and trim leading spaces
+
+			// Determine which category this file belongs to
+			stagedChar := statusCode[0]
+			unstagedChar := statusCode[1]
 
 			// Check staged changes (first character)
-			switch statusCode[0] {
-			case 'A', 'M', 'D', 'R', 'C', 'U':
+			if stagedChar != ' ' && stagedChar != '?' {
 				staged = append(staged, fileName)
-			case '?':
-				untracked = append(untracked, fileName)
 			}
 
 			// Check unstaged changes (second character)
-			switch statusCode[1] {
-			case 'M', 'D', 'R', 'C', 'U':
-				unstaged = append(unstaged, fileName)
+			if unstagedChar == 'M' || unstagedChar == 'D' {
+				// Only add to unstaged if not already in staged
+				// (to avoid duplicates for files with both staged and unstaged changes)
+				alreadyStaged := false
+				for _, s := range staged {
+					if s == fileName {
+						alreadyStaged = true
+						break
+					}
+				}
+				if !alreadyStaged {
+					unstaged = append(unstaged, fileName)
+				}
+			}
+
+			// Check untracked files
+			if statusCode == "??" {
+				untracked = append(untracked, fileName)
 			}
 		}
 
