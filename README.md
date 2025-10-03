@@ -29,6 +29,7 @@ Get started by running: `tt init`
 - `tt c` or `tt commit` - Commit changes with style
 - `tt reset` - Hard-reset the repository after confirmation
 - `tt branch` - Create, switch, and list git branches
+- `tt checkout` or `tt co` - Interactively checkout branches or commits
 - `tt merge` - Merge branches with intelligent conflict handling
 - `tt push` - Push changes to remote repository
 - `tt pull` - Pull changes from remote repository
@@ -179,6 +180,31 @@ tt stash pop
 ```
 
 Applies the latest stash with confirmation and warns about potential conflicts.
+
+### Checkout Command
+
+The `tt checkout` command provides an interactive way to checkout branches or specific commits.
+
+```bash
+tt checkout
+# or
+tt co
+```
+
+This will:
+1. Show current branch or detached HEAD state
+2. Warn about uncommitted changes (if any)
+3. Present an interactive menu to choose between:
+   - **Checkout a branch** - Select from local branches with last commit info
+   - **Checkout a commit** - Choose from recent 20 commits or search all
+4. For commit checkout, show a detached HEAD warning and require confirmation
+5. Display success message with new branch/commit info
+
+**Features:**
+- Searchable/filterable branch and commit lists
+- Shows commit messages, authors, and dates for context
+- Clear warnings about detached HEAD state when checking out commits
+- Validates uncommitted changes and explains git's behavior
 
 ### Add Command
 
